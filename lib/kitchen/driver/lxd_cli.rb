@@ -271,12 +271,14 @@ module Kitchen
               dns_servers = "nameserver #{config[:ip_gateway]}\nnameserver 8.8.8.8\nnameserver 8.8.4.4"
             end if config[:ipv4] && dns_servers.length == 0
 
+            dhcp_dns_disable = "make_resolv_conf() {\n : \n}"
             if dns_servers.length > 0
               if system "lxc exec #{instance.name} -- test -e /etc/redhat-release"
                 wait_for_path("/etc/resolv.conf")
                 debug("Setting up the following dns servers via /etc/resolv.conf:")
                 debug(dns_servers.gsub("\n", ' '))
                 p.puts(" echo \"#{dns_servers.chomp}\" > /etc/resolv.conf")
+                p.puts(" echo \"#{dhcp_dns_disable}\" > /etc/dhcp/dhclient-enter-hooks && chmod a+x /etc/dhcp/dhclient-enter-hooks")
               else
                 wait_for_path("/etc/resolvconf/resolv.conf.d/base")
                 debug("Setting up the following dns servers via /etc/resolvconf/resolv.conf.d/base:")
