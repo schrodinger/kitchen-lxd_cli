@@ -72,14 +72,22 @@ module Kitchen
         if exists?
           if running?
             info("Stopping container #{instance.name}")
-            run_lxc_command("stop #{instance.name}")
+            begin
+              run_lxc_command("stop #{instance.name}")
+              break if $?.to_i == 0
+              sleep 2
+            end while true
           end
 
           publish_image if config[:publish_image_before_destroy]
 
           unless config[:never_destroy]
             info("Deleting container #{instance.name}")
-            run_lxc_command("delete #{instance.name}") unless config[:never_destroy] && config[:never_destroy] == true
+            begin
+              run_lxc_command("delete #{instance.name}") unless config[:never_destroy] && config[:never_destroy] == true
+              break if $?.to_i == 0
+              sleep 2
+            end while true
           end
         end
         state.delete(:hostname)
