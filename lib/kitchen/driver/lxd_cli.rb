@@ -291,6 +291,8 @@ module Kitchen
                 wait_for_path("/etc/resolvconf/resolv.conf.d/base")
                 debug("Setting up the following dns servers via /etc/resolvconf/resolv.conf.d/base:")
                 debug(dns_servers.gsub("\n", ' '))
+                p.puts("sed -i 's/^eth\*/#eth*/g' /etc/resolvconf/interface-order")
+                p.puts("sed -i 's/^\*/#*/g' /etc/resolvconf/interface-order")
                 p.puts(" echo \"#{dns_servers.chomp}\" > /etc/resolvconf/resolv.conf.d/base")
                 wait_for_path("/run/resolvconf/interface")
                 p.puts("resolvconf -u")
