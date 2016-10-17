@@ -79,16 +79,25 @@ module Kitchen
         @@instance_name = get_or_create_unique_instance_name
         if exists?
           if running?
-            info("Stopping container #{@@instance_name}")
-            run_lxc_command("stop #{@@instance_name} --force")
+            info("Stopping container #{instance.name}")
+            begin
+              run_lxc_command("stop #{instance.name}")
+              break if $?.to_i == 0
+              sleep 2
+            end while true
           end
 
           publish_image if config[:publish_image_before_destroy]
 
           unless config[:never_destroy] && config[:never_destroy] == true
+            info("Deleting container #{instance.name}")
+            begin
             info("Deleting container #{@@instance_name}")
-            run_lxc_command("delete #{@@instance_name} --force")
-            File.delete(".kitchen/#{instance.name}.lxd_unique_name") if File.exist?(".kitchen/#{instance.name}.lxd_unique_name")
+              run_lxc_command("delete #{@@instance_name} --force")
+              File.delete(".kitchen/#{instance.name}.lxd_unique_name") if File.exist?(".kitchen/#{instance.name}.lxd_unique_name")
+              break if $?.to_i == 0
+              sleep 2
+            end while true
           end
         end
         state.delete(:hostname)
@@ -290,16 +299,20 @@ module Kitchen
               dns_servers = "nameserver #{config[:ip_gateway]}\nnameserver 8.8.8.8\nnameserver 8.8.4.4"
             end if config[:ipv4] && dns_servers.length == 0
 
+            dhcp_dns_disable = "make_resolv_conf() {\n : \n}"
             if dns_servers.length > 0
               if system "lxc exec #{@@instance_name} -- test -e /etc/redhat-release"
                 wait_for_path("/etc/resolv.conf")
                 debug("Setting up the following dns servers via /etc/resolv.conf:")
                 debug(dns_servers.gsub("\n", ' '))
                 p.puts(" echo \"#{dns_servers.chomp}\" > /etc/resolv.conf")
+                p.puts(" echo \"#{dhcp_dns_disable}\" > /etc/dhcp/dhclient-enter-hooks && chmod a+x /etc/dhcp/dhclient-enter-hooks")
               else
                 wait_for_path("/etc/resolvconf/resolv.conf.d/base")
                 debug("Setting up the following dns servers via /etc/resolvconf/resolv.conf.d/base:")
                 debug(dns_servers.gsub("\n", ' '))
+                p.puts("sed -i 's/^eth\*/#eth*/g' /etc/resolvconf/interface-order")
+                p.puts("sed -i 's/^\*/#*/g' /etc/resolvconf/interface-order")
                 p.puts(" echo \"#{dns_servers.chomp}\" > /etc/resolvconf/resolv.conf.d/base")
                 wait_for_path("/run/resolvconf/interface")
                 p.puts("resolvconf -u")
