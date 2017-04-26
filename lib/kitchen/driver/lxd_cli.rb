@@ -63,6 +63,7 @@ module Kitchen
         end
 
         config_and_start_container unless running?
+        configure_ec2_hints if config[:ec2_hints]
         configure_dns
         lxc_ip = wait_for_ip_address
         state[:hostname] = lxc_ip
@@ -273,6 +274,12 @@ module Kitchen
               run_lxc_command("config device add #{@@instance_name} #{mount_name} disk source=#{host_path} path=#{mount_binding[:container_path]}")
             end
           end if config[:mount].class == Hash
+        end
+
+        def configure_ec2_hints
+          info("Create ec2 hints on #{@@instance_name}")
+          `lxc exec #{@@instance_name} -- mkdir -p /etc/chef/ohai/hints`
+          `lxc exec #{@@instance_name} -- touch /etc/chef/ohai/hints/ec2.json`
         end
 
         def configure_dns
