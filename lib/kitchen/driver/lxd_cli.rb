@@ -37,7 +37,7 @@ module Kitchen
           File.expand_path('~/.ssh/identity.pub'),
           File.expand_path('~/.ssh/id_ecdsa.pub')
         ].find { |path| File.exist?(path) }
-          
+
         raise 'Public key could not be found in the public_key_path provided.  Please update the kitchen-lxd_cli config public_key_path in kitchen yaml or create a ssh key pair (e.g. `ssh-keygen -t rsa`)' unless pub_key
 
         pub_key
@@ -223,6 +223,10 @@ module Kitchen
               p.puts("exit")
             end
             arg_disable_dhcp = "&& lxc exec #{@@instance_name} -- sed -i 's/dhcp/manual/g' /etc/network/interfaces.d/eth0.cfg"
+          end
+
+          if config[:unconfined]
+            run_lxc_command("config set #{@@instance_name} raw.lxc lxc.aa_profile=unconfined")
           end
 
           info("Starting container #{@@instance_name}")
