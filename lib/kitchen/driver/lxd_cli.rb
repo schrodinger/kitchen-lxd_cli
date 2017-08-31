@@ -47,6 +47,7 @@ module Kitchen
       default_config :lxd_proxy_update, false
       default_config :username, 'root'
       default_config :lxd_unique_name, true
+      default_config :docker, false
 
       @@instance_name
 
@@ -227,6 +228,10 @@ module Kitchen
 
           if config[:unconfined]
             run_lxc_command("config set #{@@instance_name} raw.lxc lxc.aa_profile=unconfined")
+          end
+
+          if config[:docker]
+            run_lxc_command("config set #{@@instance_name} security.nesting true")
           end
 
           info("Starting container #{@@instance_name}")
