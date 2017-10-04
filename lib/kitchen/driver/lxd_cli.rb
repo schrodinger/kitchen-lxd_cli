@@ -64,6 +64,7 @@ module Kitchen
         end
 
         config_and_start_container unless running?
+        configure_zeroconf
         configure_ec2_hints if config[:ec2_hints]
         configure_dns
         lxc_ip = wait_for_ip_address
@@ -283,6 +284,12 @@ module Kitchen
               run_lxc_command("config device add #{@@instance_name} #{mount_name} disk source=#{host_path} path=#{mount_binding[:container_path]}")
             end
           end if config[:mount].class == Hash
+        end
+
+        def configure_zeroconf
+          if system "lxc exec #{@@instance_name} -- test -e /etc/redhat-release"
+             run_lxc_command("exec #{@@instance_name} -- sed -i '$ a NOZEROCONF=yes' /etc/sysconfig/network")
+          end
         end
 
         def configure_ec2_hints
